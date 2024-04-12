@@ -1,0 +1,62 @@
+
+//login  schema
+
+from flask import Flask, request, jsonify, make_response
+from flask_pymongo import PyMongo
+import jwt
+import secrets  # For verification token generation
+
+app = Flask(__name__)
+app.config["MONGO_URI"] = "your_mongo_uri"  # Replace with your MongoDB connection URI
+app.config["SECRET_KEY"] = "your_secret_key"  # Replace with your JWT secret key
+mongo = PyMongo(app)
+
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json.get("email")
+    password = request.json.get("password")
+
+    user = mongo.db.loginDetails.find_one({"email": email, "password": password})
+
+    if user:
+       
+
+        token1 = jwt.encode({"email": email, "password": password}, app.config["SECRET_KEY"], algorithm="HS256")
+        response = make_response(jsonify({"status": "success", "email": user["email"], "name": user["name"], "token1": token1}))
+        response.set_cookie("token1", token1, expires=86400)  # Set cookie with 1-day expiration
+        return response
+    else:
+        return jsonify("No Data found"), 404
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+
+
+
+// login details user
+
+from pymongo import MongoClient
+
+client = MongoClient("your_mongo_uri")  # Replace with your MongoDB connection URI
+db = client["your_database_name"]  # Replace with your database name
+
+login_collection = db["login"]
+
+def create_login_schema():
+    login_collection.create_index("email", unique=True)  # Ensure unique email constraint
+
+def create_user(name, email, password, role="user", status="Active"):
+    user_doc = {
+        "name": name,
+        "email": email,
+        "password": password,
+        "role": role,
+        "status": status
+    }
+    login_collection.insert_one(user_doc)
+
+# Example usage:
+create_login_schema()  # Create the index for unique email
+create_user("John Doe", "johndoe@example.com", "password123")
